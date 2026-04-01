@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulse | Setlist Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #333;
+      padding: 1px;
+      text-align: center;
+    }
+    .setlist {
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background: #333;
+      margin: 20px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    #videoPlayer{ width: 600px;}
+      /* Responsive */
+    @media (max-width: 700px){
+          #videoPlayer{ width: 300px;}
+        }
+    .song {
+      background: #222;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      cursor: grab;   /* shows drag cursor */
+      transition: 0.3s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .song:active {
+      cursor: grabbing;
+    }
+
+    .song:hover { background: #444; }
+    .active { border: 2px solid #00ffcc; }
+    .song-buttons button {
+      margin-left: 5px;
+      background: #555;
+      color: #eee;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .song-buttons button:hover { background: #777; }
+    .controls {
+      text-align: center;
+      margin: 20px;
+    }
+    button {
+      background: #00ffcc;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    button:hover { background: #00cc99; }
+    .chart {
+      background: #222;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 8px;
+      min-height: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: "Courier New", monospace;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+    .lyrics h2 { margin-bottom: 10px; color: #00ffcc; }
+    .lyrics .line { margin: 5px 0; }
+    .lyrics .chords { font-weight: bold; color: #ffcc00; }
+    .admin {
+      background: #333;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 8px;
+    }
+    input, textarea {
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+    }
+    input{
+      min-height: 25px;
+    }
+    textarea{
+      min-width: 250px;
+      min-height: 70px;
+    }
+    .speed-control {
+      margin-top: 10px;
+      color: #eee;
+    }
+    .highlight {
+      background: rgba(0, 255, 204, 0.2);
+      border-left: 3px solid #00ffcc;
+      padding-left: 5px;
+    }
+    .notes {
+      background: #333;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 8px;
+    }
+    .notes textarea {
+      width: 100%;
+      height: 100px;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); color:#ff4444; }
+      50% { transform: scale(1.5); color:#00ffcc; }
+      100% { transform: scale(1); color:#ff4444; }
+    }
+    .pulsing {
+      animation: pulse 0.3s ease;
+    }
+    .service-flow {
+      background: #333;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 8px;
+    }
+    .flow-item {
+      background: #222;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: grab;
+    }
+    .flow-item:active { cursor: grabbing; }
+
+    #stageDisplay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      color: #dbd9d9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 3em;
+      text-align: center;
+      z-index: 9999;
+    }
+    #stageLyrics {
+      max-width: 90%;
+      line-height: 1.5;
+    }
+
+    /* Themes */
+    .stage-default { background:#000; color:#fff; }
+    .stage-calmBlue { background:#003366; color:#aaddff; }
+    .stage-brightGold { background:#fff8dc; color:#cc9900; }
+    .stage-darkMode { background:#111; color:#eee; }
+
+    /* back to top script */
+    /* Floating Menu Button */
+    #backToTop {
+      display: none; /* hidden by default */
+      position: fixed;
+      bottom: 20px;
+      right: 45px;
+      background-color: #01534f;
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+      padding: 15px;
+      z-index: 9999;
+    }
+
+    #backToTop:hover {
+      background-color: #0932bbde;
+    }
+
+    /* Make  floating menu container float and look cool */
+    #menuToggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #444;
+  color: #fff;
+  padding: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 10000;
+}
+#floatingMenu {
+  position: fixed;
+  bottom: 70px;
+  right: 20px;
+  background: rgba(50,50,50,0.95);
+  color: #eee;
+  padding: 15px;
+  border-radius: 12px;
+  width: 250px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 9999;
+}
+
+
+#floatingMenu select {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  background: #222;
+  color: #eee;
+  border: none;
+}
+#menuContent {
+  margin-top: 10px;
+}
+#menuContent button {
+  display: block;
+  margin: 5px 0;
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: #444;
+  color: #fff;
+  cursor: pointer;
+}
+#menuContent button:hover {
+  background: #666;
+}
+
+/* Modal background */
+#licenseModal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.75);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* License box */
+.license-box {
+  background: #1e1e1e;
+  color: #eee;
+  padding: 20px;
+  border-radius: 12px;
+  width: 80%;
+  max-width: 800px;
+  max-height: 80%;
+  overflow-y: auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.license-box h2 {
+  margin-top: 0;
+  color: #ffd700;
+  text-align: center;
+  font-size: 20px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+}
+
+.license-box pre {
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #ccc;
+  margin: 15px 0;
+}
+
+/* Close button */
+.close-btn {
+  display: block;
+  margin: 0 auto;
+  background: #444;
+  color: #fff;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.close-btn:hover {
+  background: #666;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {opacity: 0; transform: scale(0.95);}
+  to {opacity: 1; transform: scale(1);}
+}
+
+
+  </style>
+</head>
+<body>
+  <header>
+    <h3>🎹 Pulse Dashboard | D-Musiq</h3>
+  </header>
+
+      <!-- password protection script -->
+  <div id="loginScreen" style="background:#111; color:#eee; position:fixed; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000;">
+    <h2>Enter Password</h2>
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="checkLogin()">Login</button>
+    <div id="loginMessage" style="color:red; margin-top:10px;"></div>
+  </div>
+
+
+  <!-- Search bar -->
+  <div class="controls">
+    <input type="text" id="searchBar" placeholder="Search songs..." onkeyup="searchSongs()">
+    <input type="text" id="filterTags" placeholder="Filter by tags..." onkeyup="filterByTags()">
+
+    <select id="filterCategory" onchange="filterByCategory()">
+      <option value="">All Categories</option>
+      <option value="Worship">Worship</option>
+      <option value="Praise">Praise</option>
+      <option value="Practice">Practice</option>
+      <option value="Communion">Communion</option>
+      <option value="Fast">Fast Tempo</option>
+      <option value="Slow">Slow Tempo</option>
+    </select>
+  </div>
+
+  <div class="setlist" id="setlist"></div>
+
+  <div class="service-flow">
+    <h3>Service Flow Builder</h3>
+    <div id="flowList"></div>
+    <input id="flowItem" placeholder="Add item (e.g. Prayer, Song, Reading)">
+    <button onclick="addFlowItem()">➕ Add Item</button>
+  </div>
+
+  <div class="controls">
+    <h3>play Pad/Audio and Video</h3>
+    <!-- Audio pad -->
+     <label for="padfile">Audio:<input type="file" id="padFile" accept="audio/*" onchange="loadPadFile()"></label>
+        <div id="playbackControls" style="display:none;">
+          <button onclick="triggerPad()">🎶 Play/Pause Pad</button>
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1" onchange="updateVolume()">
+        </div>
+
+    <!-- Video player -->
+    <label for="videoFile">Video:<input type="file" id="videoFile" accept="video/*" onchange="loadVideoFile()">
+      <div id="videoControls" style="display:none;">
+        <button onclick="triggerVideo()">🎥 Play/Pause Video</button>
+      </div>
+        <video id="videoPlayer" controls loop style="display:none;"></video>
+  </div>
+
+ <!-- Floating toggle button -->
+<div id="menuToggle" onclick="toggleMenu()">☰</div>
+
+<!-- Floating menu -->
+<div id="floatingMenu" style="display:none;">
+  <select id="menuSelect" onchange="showControls()">
+    <option value="">-- Select Option --</option>
+    <option value="appearance">📺 Appearance</option>
+    <option value="timer">⏱ Timer Controls</option>
+    <option value="metronome">🎵 Metronome</option>
+    <option value="lyrics">✍ Lyrics</option>
+    <option value="scroll">📑 Scroll</option>
+    <option value="transpose">🎹 Transpose</option>
+    <option value="stage">🎤 Stage Display</option>
+    <option value="analytics">📊 Analytics</option>
+    <option value="notes">📝 Notes</option>
+    <option value="license">📜 License</option>
+  </select>
+  <div id="menuContent"></div>
+</div>
+
+
+
+
+  <div class="controls">
+        <button onclick="nextSong()">➡ Next Song</button>
+        <button onclick="toggleFullscreen()">🖥 Fullscreen</button>
+        
+
+        <!-- To display the timer countdown -->
+         <div id="countdownDisplay" style="margin-top:10px; font-size:1.2em; color:#00ffcc;">
+          ⏳ Countdown: --
+        </div>
+
+        <!-- To display metronome and play sound -->
+        <div id="metronomePulse" style="margin-top:10px; font-size:2em; color:#ff4444;">
+          ●
+        </div>
+        <audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  </div>
+  
+  <div id="timerDisplay" style="margin-top:10px; font-size:1.2em; color:#ffcc00;"></div>
+
+  <!-- It will display the Lyrics and more -->
+  <div class="chart" id="chart">
+    Select a song to view chords/lyrics here.
+  </div>
+
+  <div class="admin" id="edit">
+      <h3>Add / Edit Song</h3>
+      <input id="title" placeholder="Song Title">
+      <textarea id="chartText" placeholder="Chord chart or lyrics"></textarea>
+      <select id="category">
+        <option value="Worship">Worship</option>
+        <option value="Praise">Praise</option>
+        <option value="Practice">Practice</option>
+        <option value="Communion">Communion</option>
+        <option value="Fast">Fast Tempo</option>
+        <option value="Slow">Slow Tempo</option>
+      </select>
+      <input id="tags" placeholder="Tags (comma separated)">
+      <button onclick="addSong()">➕ Add Song</button>
+      <button onclick="updateSong()">✏️ Update Song</button>
+  </div>
+
+  <div class="notes">
+    <h3>Personal Notes</h3>
+    <textarea id="notesText" placeholder="Write your notes here..."></textarea>
+    <button onclick="saveNotes()">💾 Save Notes</button>
+    <button onclick="clearNotes()">🗑 Clear Notes</button>
+  </div>
+
+
+
+  <audio id="pad" loop></audio>
+
+    <!-- This one for the stageDisplay...to display it -->
+  <div id="stageDisplay" style="display:none;">
+    <div id="stageLyrics"></div>
+  </div>
+
+  <!-- License Modal -->
+<div id="licenseModal">
+  <div class="license-box">
+    <h2>📜 Pulse Dashboard License</h2>
+    <pre id="licenseText"></pre>
+    <button class="close-btn" onclick="closeLicense()">Close</button>
+  </div>
+</div>
+
+
+
+
+       <!-- Floating Back to Top Button -->
+  <button id="backToTop" title="Go to top">⇡</button>
+
+  
+  <script>
+              //--Back to top button script--
+        // Get the button
+        const backToTopBtn = document.getElementById("backToTop");
+
+        // Show button when user scrolls down 100px
+        window.onscroll = function() {
+        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+            backToTopBtn.style.display = "block";
+        } else {
+            backToTopBtn.style.display = "none";
+        }
+        };
+
+        // When clicked, scroll smoothly to top
+        backToTopBtn.addEventListener("click", function() {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+        });
+
+      /*
+          //Stops right-click and F12/ Ctrl+U 😄
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'F12' || (e.ctrlKey && e.key === 'u')) {
+              e.preventDefault();
+            }
+          });
+
+      */
+                //🔒 Simple password prompt:
+const APP_PASSWORD = "pulse123"; // Set your password here
+
+function checkLogin() {
+  const input = document.getElementById("loginPassword").value;
+  if (input === APP_PASSWORD) {
+    document.getElementById("loginScreen").style.display = "none";
+  } else {
+    document.getElementById("loginMessage").innerText = "Incorrect password!";
+  }
+}
+
+
+
+// Example lyric templates
+const lyricTemplates = [
+  `[Verse 1]
+We lift our hands in praise,
+Your light shines through our days.
+
+[Chorus]
+Forever faithful, forever true,
+Our hearts belong to You.`,
+
+  `[Verse 1]
+The night is gone, the dawn is near,
+Your presence fills the atmosphere.
+
+[Chorus]
+Sing hallelujah, raise the sound,
+Your mercy flows, it knows no bounds.`,
+
+  `[Verse 1]
+In silence we hear Your call,
+Guiding footsteps, steady for all.
+
+[Chorus]
+Grace unending, love so wide,
+You are forever by our side.`
+];
+
+function generateLyrics() {
+  const mode = document.querySelector('input[name="lyricsMode"]:checked').value;
+  const title = songs[currentSongIndex]?.title || "Untitled Song";
+
+  if (mode === "local") {
+    // Pick a random template and display it in the chart...where other lyrics are displayed
+    const template = lyricTemplates[Math.floor(Math.random() * lyricTemplates.length)];
+    document.getElementById("chart").innerText = template.replace(/\${title}/g, title);
+
+  } else if (mode === "ai") {
+    // Placeholder for AI integration
+    const aiLyrics = `[Verse 1]
+In ${title}, the light shines bright,
+Voices rising through the night.
+
+[Chorus]
+Hope and faith in every line,
+Your grace eternal, love divine.`;
+    document.getElementById("chart").innerText = aiLyrics;
+  }
+}
+
+
+    //The togglemenu
+function toggleMenu() {
+  const menu = document.getElementById("floatingMenu");
+  menu.style.display = (menu.style.display === "none") ? "block" : "none";
+}
+
+    //Showing the controls on the floating menucontent
+function showControls() {
+  const choice = document.getElementById("menuSelect").value;
+  const menuContent = document.getElementById("menuContent");
+  menuContent.innerHTML = "";
+
+  if (choice === "timer") {
+    menuContent.innerHTML = `
+      <button onclick="startTimer()">▶ Start Timer</button>
+      <button onclick="stopTimer()">⏹ Stop Timer</button>
+      <button onclick="resetTimer()">🔄 Reset Timer</button>
+      <button onclick="startCountdown(300)">⏳ 5-min Countdown</button>
+    `;
+  } else if (choice === "metronome") {
+    menuContent.innerHTML = `
+      <label>BPM: <input type="number" id="bpmInput" value="120" min="40" max="240"></label>
+      <button onclick="startMetronome()">▶ Start Metronome</button>
+      <button onclick="stopMetronome()">⏹ Stop Metronome</button>
+    `;
+  }else if (choice === "appearance") {
+    menuContent.innerHTML = `
+      <button onclick="toggleTheme()">🌗 Theme</button>
+      <button onclick="decreaseFont()">🔎 A-</button>
+      <button onclick="increaseFont()">🔎 A+</button>
+    `;
+  } else if (choice === "lyrics") {
+    menuContent.innerHTML = `
+      <label><input type="radio" name="lyricsMode" value="local" checked> Local</label>
+      <label><input type="radio" name="lyricsMode" value="ai"> AI</label>
+      <button onclick="generateLyrics()">✍ Write Lyrics</button>
+    `;
+  } else if (choice === "scroll") {
+    menuContent.innerHTML = `
+      <button onclick="toggleScroll()">⏯ Auto Scroll</button>
+      <button onclick="changeSpeed()">⚡ Scroll Speed</button>
+
+      <div class="speed-control">
+        <label for="speedSlider">Scroll Speed: <input type="range" id="speedSlider" min="10" max="200" value="100" step="10" onchange="updateSpeed()"></label>
+      </div>
+    `;
+  }else if (choice === "transpose") {
+    menuContent.innerHTML = `
+      <button onclick="transpose(-1)">⬅ Transpose Down</button>
+      <button onclick="transpose(1)">➡ Transpose Up</button>
+    `;
+  }else if (choice === "stage") {
+    menuContent.innerHTML = `
+      <button onclick="toggleStageDisplay()">🎤 Toggle Stage</button>
+      <select id="themeSelect" onchange="applyTheme()">
+        <option value="default">Default</option>
+        <option value="calmBlue">Calm Blue</option>
+        <option value="brightGold">Bright Gold</option>
+        <option value="darkMode">Dark Mode</option>
+      </select>
+      <input type="file" id="bgImage" accept="image/*" onchange="setBackground(event)">
+    `;
+  }else if (choice === "analytics") {
+    menuContent.innerHTML = `
+      <button onclick="exportSetlist()">📤 Export Setlist</button>
+        <label for="importFile">Import Setlist: <input type="file" id="importFile" accept=".json" onchange="importSetlist(event)" style="width:200px;"></label>
+      <button onclick="exportFlow()">📤 Export Flow</button>
+        <label for="importFlowfile">Import Flow: <input type="file" id="importFlowFile" accept=".json" onchange="importFlow(event)" style="width:200px;"></label>
+    `;
+  }else if (choice === "notes") {
+    menuContent.innerHTML = `
+    <button><a href="#notesText" style="text-decoration:none;color:white;">📗 Personal notes</a></button>
+    `;
+  }else if (choice === "license") {
+    const licenseText = `
+Pulse Dashboard End User License Agreement (EULA)
+
+Copyright (c) 2026 Derrick (Pulse Dashboard Software)
+
+IMPORTANT: PLEASE READ THIS AGREEMENT CAREFULLY BEFORE USING THE SOFTWARE.
+
+By installing, copying, or otherwise using the Pulse Dashboard (the "Software"), you agree to be bound by the terms of this End User License Agreement ("Agreement"). If you do not agree to these terms, do not install or use the Software.
+
+1. Grant of License
+   - You are granted a non-exclusive, non-transferable license to use the Software for personal, educational, worship, and prayer-related purposes.
+   - You may install and run the Software on multiple devices you own or control, provided usage remains consistent with the permitted purposes.
+
+2. Permitted Uses
+   - The Software may be used during worship services, prayer meetings, rehearsals, and other faith-based gatherings.
+   - You may generate, display, and perform chord charts, lyrics, progressions, and related musical content using the Software.
+   - You may customize templates, add your own lyrics, and adapt chord progressions to suit your worship context.
+
+3. Restrictions
+   - You may not reverse engineer, decompile, or disassemble the Software.
+   - You may not use the Software to create or distribute malicious code.
+   - You may not sell, rent, lease, or sublicense the Software without prior written consent from the author.
+   - The Software must not be used for unlawful activities or in contexts that promote hate, violence, or discrimination.
+
+4. Ownership
+   - The Software is owned by Derrick and is protected by copyright and intellectual property laws.
+   - All rights not expressly granted herein are reserved by the author.
+
+5. Distribution
+   - You may freely share the Software with others for worship and prayer purposes, provided this Agreement and copyright notice remain intact.
+   - Modified versions must clearly state that they are based on the original Pulse Dashboard project.
+
+6. Warranty Disclaimer
+   - THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+   - The author disclaims all warranties, express or implied, including but not limited to merchantability, fitness for a particular purpose, and non-infringement.
+   - The author shall not be liable for any damages arising from the use or inability to use the Software.
+
+7. Community Contribution
+   - Contributions, suggestions, and improvements are welcome. By submitting contributions, you agree they may be incorporated into the Software under the same license terms.
+
+8. Governing Law
+   - This Agreement shall be governed by and interpreted in accordance with the laws of your jurisdiction, without regard to conflict of law provisions.
+
+9. Termination
+   - This Agreement is effective until terminated. You may terminate it at any time by deleting the Software.
+   - The author may terminate this Agreement if you fail to comply with its terms. Upon termination, you must cease all use of the Software.
+
+10. Entire Agreement
+   - This Agreement constitutes the entire understanding between you and the author regarding the Software and supersedes all prior agreements.
+
+---
+
+END OF TERMS
+    `;
+
+    document.getElementById("licenseText").textContent = licenseText;
+    document.getElementById("licenseModal").style.display = "flex";
+}
+ // add more controls here...
+
+
+     // when clicking the links for the Id ( links such as personal notes ) to scroll smoothly 
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+              anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href'))
+                  .scrollIntoView({ behavior: 'smooth' });
+              });
+            });
+
+}
+
+      function closeLicense() {
+        document.getElementById("licenseModal").style.display = "none";
+      }
+      // Optional: allow Esc key to close modal
+      document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+          closeLicense();
+        }
+      });
+  </script>
+
+  <script>
+        let currentSongIndex = -1;
+        let songs = [];
+        let scrollInterval = null;
+        let scrolling = false;
+        let scrollSpeed = 100;
+        let timerInterval = null;
+        let countdownInterval = null;
+        let elapsedSeconds = 0;
+        let metronomeInterval = null;
+        let flow = [];
+
+        const chart = document.getElementById("chart");
+        const pad = document.getElementById("pad");
+
+        function loadSongs() {
+          const saved = localStorage.getItem("songs");
+          songs = saved ? JSON.parse(saved) : [];
+          renderSetlist();
+        }
+
+          //setlist can now be dragged and dropped to reorder.
+       function renderSetlist() {
+            const setlist = document.getElementById("setlist");
+            setlist.innerHTML = "";
+            songs.forEach((song, i) => {
+              const div = document.createElement("div");
+              div.className = "song";
+              const tagsDisplay = song.tags && song.tags.length ? " [" + song.tags.join(", ") + "]" : "";
+              div.innerHTML = `<span>${song.title} <em style="color:#00cc99;">(${song.category || "Uncategorized"})</em>${tagsDisplay}</span>
+                <div class="song-buttons">
+                  <button onclick="editSong(${i})">Edit</button>
+                  <button onclick="deleteSong(${i})">Delete</button>
+                </div>`;
+              div.onclick = (e) => {
+                if (!e.target.closest(".song-buttons")) loadSong(i);
+              };
+              setlist.appendChild(div);
+            });
+
+            // Enable drag-and-drop after rendering
+            enableDragAndDrop();
+
+          }
+
+              //Loading the songs....Lyrics (on the chart...)
+        function loadSong(index) {
+          currentSongIndex = index;
+          highlightSong();
+
+                // Split chart text into lines
+            const lines = songs[index].chart.split("\n");
+            let formatted = `<div class="lyrics"><h2>${songs[index].title}</h2>`;
+            
+            lines.forEach(line => {
+              if (line.trim().length === 0) {
+                formatted += "<br>";  // blank line for spacing
+              } else if (/^[A-G]/.test(line.trim())) {
+                // If line starts with chord letters, style as chords
+                formatted += `<div class="line chords">${line}</div>`;
+              } else {
+                // Otherwise treat as lyric line
+                formatted += `<div class="line">${line}</div>`;
+              }
+            });
+
+            formatted += "</div>";
+            chart.innerHTML = formatted;
+            chart.scrollTop = 0;
+
+            // Auto-scroll to chart/lyrics
+              const chartElement = document.getElementById("chart");
+              chartElement.scrollIntoView({ behavior: "smooth", block: "center" });
+              chartElement.style.backgroundColor = "#444";
+                setTimeout(() => chartElement.style.backgroundColor = "", 1000);
+        }
+
+
+
+        function nextSong() {
+          if (currentSongIndex < songs.length - 1) {
+            currentSongIndex++;
+            loadSong(currentSongIndex);
+          }
+        }
+
+        function highlightSong() {
+          document.querySelectorAll(".song").forEach((el, i) => {
+            el.classList.toggle("active", i === currentSongIndex);
+          });
+        }
+
+        // Search
+        function searchSongs() {
+          const query = document.getElementById("searchBar").value.toLowerCase();
+          const setlist = document.getElementById("setlist");
+          setlist.innerHTML = "";
+          songs.forEach((song, i) => {
+            if (song.title.toLowerCase().includes(query)) {
+              const div = document.createElement("div");
+              div.className = "song";
+              div.innerHTML = `<span>${song.title}</span>
+                <div class="song-buttons">
+                  <button onclick="editSong(${i})">Edit</button>
+                  <button onclick="deleteSong(${i})">Delete</button>
+                </div>`;
+              div.onclick = (e) => {
+                if (!e.target.closest(".song-buttons")) loadSong(i);
+              };
+              setlist.appendChild(div);
+            }
+          });
+        }
+
+          // filter functions
+        function filterByCategory() {
+          const filter = document.getElementById("filterCategory").value;
+          const setlist = document.getElementById("setlist");
+          setlist.innerHTML = "";
+          songs.forEach((song, i) => {
+            if (!filter || song.category === filter) {
+              const div = document.createElement("div");
+              div.className = "song";
+              div.innerHTML = `<span>${song.title} <em style="color:#00cc99;">(${song.category || "Uncategorized"})</em></span>
+                <div class="song-buttons">
+                  <button onclick="editSong(${i})">Edit</button>
+                  <button onclick="deleteSong(${i})">Delete</button>
+                </div>`;
+              div.onclick = (e) => {
+                if (!e.target.closest(".song-buttons")) loadSong(i);
+              };
+              setlist.appendChild(div);
+            }
+          });
+        }
+
+
+        function filterByTags() {
+          const filter = document.getElementById("filterTags").value.toLowerCase();
+          const setlist = document.getElementById("setlist");
+          setlist.innerHTML = "";
+          songs.forEach((song, i) => {
+            const tagString = (song.tags || []).join(", ").toLowerCase();
+            if (!filter || tagString.includes(filter)) {
+              const div = document.createElement("div");
+              div.className = "song";
+              const tagsDisplay = song.tags && song.tags.length ? " [" + song.tags.join(", ") + "]" : "";
+              div.innerHTML = `<span>${song.title} <em style="color:#00cc99;">(${song.category || "Uncategorized"})</em>${tagsDisplay}</span>
+                <div class="song-buttons">
+                  <button onclick="editSong(${i})">Edit</button>
+                  <button onclick="deleteSong(${i})">Delete</button>
+                </div>`;
+              div.onclick = (e) => {
+                if (!e.target.closest(".song-buttons")) loadSong(i);
+              };
+              setlist.appendChild(div);
+            }
+          });
+        }
+
+
+
+        function toggleStageDisplay() {
+            const stage = document.getElementById("stageDisplay");
+            if (stage.style.display === "none") {
+              stage.style.display = "flex";
+              updateStageLyrics();
+            } else {
+              stage.style.display = "none";
+            }
+          }
+
+          function updateStageLyrics() {
+            if (currentSongIndex >= 0) {
+              const lines = songs[currentSongIndex].chart.split("\n");
+              // Only show lyrics (skip chords)
+              const lyricsOnly = lines.filter(line => !/^[A-G]/.test(line.trim())).join("<br>");
+              document.getElementById("stageLyrics").innerHTML = lyricsOnly;
+            }
+          }
+
+          function applyTheme() {
+            const theme = document.getElementById("themeSelect").value;
+            const stage = document.getElementById("stageDisplay");
+            stage.className = "stage-" + theme;
+          }
+
+          function setBackground(event) {
+            const file = event.target.files[0];
+            if (file) {
+              const url = URL.createObjectURL(file);
+              document.getElementById("stageDisplay").style.backgroundImage = `url(${url})`;
+              document.getElementById("stageDisplay").style.backgroundSize = "cover";
+              document.getElementById("stageDisplay").style.backgroundPosition = "center";
+            }
+          }
+
+
+              function syncScrollWithMedia(mediaElement) {
+          const chart = document.getElementById("chart");
+          mediaElement.ontimeupdate = () => {
+            const progress = mediaElement.currentTime / mediaElement.duration;
+            chart.scrollTop = progress * (chart.scrollHeight - chart.clientHeight);
+          };
+        }
+
+        // Example usage:
+        syncScrollWithMedia(document.getElementById("videoPlayer"));
+
+
+
+        // Add item in the service flow
+        function addFlowItem() {
+          const item = document.getElementById("flowItem").value;
+          if (item) {
+            flow.push(item);
+            localStorage.setItem("flow", JSON.stringify(flow));
+            renderFlow();
+            document.getElementById("flowItem").value = "";
+          }
+        }
+
+        // Render flow
+        function renderFlow() {
+          const flowList = document.getElementById("flowList");
+          flowList.innerHTML = "";
+          flow.forEach((item, i) => {
+            const div = document.createElement("div");
+            div.className = "flow-item";
+            div.innerHTML = `${i+1}. ${item}`;
+            div.setAttribute("draggable", true);
+
+            // Drag events
+            div.addEventListener("dragstart", (e) => {
+              e.dataTransfer.setData("index", i);
+            });
+            div.addEventListener("dragover", (e) => e.preventDefault());
+            div.addEventListener("drop", (e) => {
+              e.preventDefault();
+              const fromIndex = e.dataTransfer.getData("index");
+              const toIndex = i;
+              const moved = flow.splice(fromIndex, 1)[0];
+              flow.splice(toIndex, 0, moved);
+              localStorage.setItem("flow", JSON.stringify(flow));
+              renderFlow();
+            });
+
+            flowList.appendChild(div);
+          });
+        }
+
+        // Export flow
+        function exportFlow() {
+          const dataStr = JSON.stringify(flow, null, 2);
+          const blob = new Blob([dataStr], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "service_flow.json";
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        // Import flow
+        function importFlow(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const importedFlow = JSON.parse(e.target.result);
+              if (Array.isArray(importedFlow)) {
+                flow = importedFlow;
+                localStorage.setItem("flow", JSON.stringify(flow));
+                renderFlow();
+                alert("Service flow imported successfully!");
+              }
+            } catch (err) {
+              alert("Error reading file: " + err.message);
+            }
+          };
+          reader.readAsText(file);
+        }
+
+        // Load flow on startup
+        function loadFlow() {
+          const saved = localStorage.getItem("flow");
+          flow = saved ? JSON.parse(saved) : [];
+          renderFlow();
+        }
+
+
+        // Ambient pad functions
+        function loadPadFile() {
+          const fileInput = document.getElementById("padFile");
+          const file = fileInput.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            pad.src = url;
+            document.getElementById("playbackControls").style.display = "block";
+          }
+        }
+
+        function triggerPad() {
+          if (pad.src) {
+            if (pad.paused) {
+              pad.play().catch(() => alert("Could not play audio file."));
+            } else {
+              pad.pause();
+            }
+          } else {
+            alert("Please choose an audio file first.");
+          }
+        }
+
+        function updateVolume() {
+          pad.volume = document.getElementById("volumeSlider").value;
+        }
+
+        // Drag-and-drop reorder
+          function enableDragAndDrop() {
+            const setlist = document.getElementById("setlist");
+            let draggedItem = null;
+
+            setlist.querySelectorAll(".song").forEach((item, index) => {
+              item.setAttribute("draggable", true);
+
+              item.addEventListener("dragstart", (e) => {
+                draggedItem = item;
+                e.dataTransfer.effectAllowed = "move";
+              });
+
+              item.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                const bounding = item.getBoundingClientRect();
+                const offset = bounding.y + bounding.height / 2;
+                if (e.clientY - offset > 0) {
+                  item.style["border-bottom"] = "2px solid #00ffcc";
+                  item.style["border-top"] = "";
+                } else {
+                  item.style["border-top"] = "2px solid #00ffcc";
+                  item.style["border-bottom"] = "";
+                }
+              });
+
+              item.addEventListener("dragleave", () => {
+                item.style["border-bottom"] = "";
+                item.style["border-top"] = "";
+              });
+
+              item.addEventListener("drop", (e) => {
+                e.preventDefault();
+                item.style["border-bottom"] = "";
+                item.style["border-top"] = "";
+                if (draggedItem !== item) {
+                  const draggedIndex = Array.from(setlist.children).indexOf(draggedItem);
+                  const targetIndex = Array.from(setlist.children).indexOf(item);
+
+                  // Reorder songs array
+                  const movedSong = songs.splice(draggedIndex, 1)[0];
+                  songs.splice(targetIndex, 0, movedSong);
+
+                  // Save new order
+                  localStorage.setItem("songs", JSON.stringify(songs));
+                  renderSetlist();
+                }
+              });
+            });
+          }
+
+
+    // Video functions
+            function loadVideoFile() {
+          const fileInput = document.getElementById("videoFile");
+          const file = fileInput.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            videoPlayer.src = url;
+            videoPlayer.style.display = "block";
+            document.getElementById("videoControls").style.display = "block";
+          }
+        }
+
+        function triggerVideo() {
+          if (videoPlayer.src) {
+            if (videoPlayer.paused) {
+              videoPlayer.play();
+            } else {
+              videoPlayer.pause();
+            }
+          } else {
+            alert("Please choose a video file first.");
+          }
+        }
+
+            // Volume update script
+        function updateVolume() {
+          pad.volume = document.getElementById("volumeSlider").value;
+        }
+
+            // Add song script...
+      function addSong() {
+        const title = document.getElementById("title").value;
+        const chartText = document.getElementById("chartText").value;
+        const category = document.getElementById("category").value;
+        const tags = document.getElementById("tags").value.split(",").map(t => t.trim()).filter(t => t);
+
+        if (title && chartText) {
+          songs.push({ title, chart: chartText, category, tags });
+          localStorage.setItem("songs", JSON.stringify(songs));
+          renderSetlist();
+          clearForm();
+        }
+      }
+
+      //Update song script
+      function updateSong() {
+        if (currentSongIndex >= 0) {
+          songs[currentSongIndex].title = document.getElementById("title").value;
+          songs[currentSongIndex].chart = document.getElementById("chartText").value;
+          songs[currentSongIndex].category = document.getElementById("category").value;
+          songs[currentSongIndex].tags = document.getElementById("tags").value.split(",").map(t => t.trim()).filter(t => t);
+          localStorage.setItem("songs", JSON.stringify(songs));
+          renderSetlist();
+          clearForm();
+        }
+      }
+
+
+
+            // Edit song script
+        function editSong(index) {
+          document.getElementById("title").value = songs[index].title;
+          document.getElementById("chartText").value = songs[index].chart;
+          document.getElementById("category").value = songs[index].category;
+          document.getElementById("tags").value = songs[index].tags;
+          currentSongIndex = index;
+        }
+
+
+            // Delete song script
+        function deleteSong(index) {
+          songs.splice(index, 1);
+          localStorage.setItem("songs", JSON.stringify(songs));
+          renderSetlist();
+          chart.innerHTML = "Song deleted.";
+        }
+
+        // Clear form after add,edit,update...
+        function clearForm() {
+          document.getElementById("title").value = "";
+          document.getElementById("chartText").value = "";
+          document.getElementById("category").value = "";
+          document.getElementById("tags").value = "";
+        }
+
+
+
+          // Timer functions
+          function startTimer() {
+            if (timerInterval) return; // prevent multiple timers
+            timerInterval = setInterval(() => {
+              elapsedSeconds++;
+              document.getElementById("timerDisplay").innerText =
+                "⏱ Timer: " + formatTime(elapsedSeconds);
+            }, 1000);
+          }
+
+          function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+          }
+
+          function resetTimer() {
+            stopTimer();
+            elapsedSeconds = 0;
+            document.getElementById("timerDisplay").innerText = "⏱ Timer: 00:00";
+          }
+
+          // Countdown functions
+          function startCountdown(seconds) {
+            clearInterval(countdownInterval);
+            let remaining = seconds;
+            document.getElementById("countdownDisplay").innerText =
+              "⏳ Countdown: " + formatTime(remaining);
+
+            countdownInterval = setInterval(() => {
+              remaining--;
+              document.getElementById("countdownDisplay").innerText =
+                "⏳ Countdown: " + formatTime(remaining);
+              if (remaining <= 0) {
+                clearInterval(countdownInterval);
+                document.getElementById("countdownDisplay").innerText = "⏳ Countdown: Done!";
+                alert("Countdown finished!");
+              }
+            }, 1000);
+          }
+
+          // Helper to format time mm:ss
+          function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+          }
+
+
+
+            function startMetronome() {
+              stopMetronome(); // clear any existing
+              const bpm = parseInt(document.getElementById("bpmInput").value);
+              const interval = 60000 / bpm; // ms per beat
+
+              metronomeInterval = setInterval(() => {
+                // Play click sound
+                const click = document.getElementById("clickSound");
+                click.currentTime = 0;
+                click.play();
+
+                // Visual pulse
+                const pulse = document.getElementById("metronomePulse");
+                pulse.classList.add("pulsing");
+                setTimeout(() => pulse.classList.remove("pulsing"), 300);
+              }, interval);
+            }
+
+            function stopMetronome() {
+              clearInterval(metronomeInterval);
+              metronomeInterval = null;
+            }
+
+
+                // Notes functions
+          function loadNotes() {
+            const savedNotes = localStorage.getItem("notes");
+            if (savedNotes) {
+              document.getElementById("notesText").value = savedNotes;
+            }
+          }
+
+          function saveNotes() {
+            const notes = document.getElementById("notesText").value;
+            localStorage.setItem("notes", notes);
+            alert("Notes saved!");
+          }
+
+          function clearNotes() {
+            document.getElementById("notesText").value = "";
+            localStorage.removeItem("notes");
+            alert("Notes cleared!");
+          }
+
+
+        // Auto scroll functions with line highlighting
+        function toggleScroll() {
+          if (scrolling) {
+            clearInterval(scrollInterval);
+            scrolling = false;
+          } else {
+            scrollInterval = setInterval(() => {
+              chart.scrollTop += 1;
+
+              // Highlight current line
+              highlightCurrentLine();
+
+              if (chart.scrollTop >= chart.scrollHeight - chart.clientHeight) {
+                clearInterval(scrollInterval);
+                scrolling = false;
+              }
+            }, scrollSpeed);
+            scrolling = true;
+          }
+        }
+
+        function highlightCurrentLine() {
+          const lines = chart.querySelectorAll(".line");
+          let closestLine = null;
+          let closestDistance = Infinity;
+
+          lines.forEach(line => {
+            const rect = line.getBoundingClientRect();
+            const chartRect = chart.getBoundingClientRect();
+            const distance = Math.abs(rect.top - chartRect.top);
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestLine = line;
+            }
+          });
+          lines.forEach(line => line.classList.remove("highlight"));
+          if (closestLine) closestLine.classList.add("highlight");
+        }
+
+            // fullscreen function script
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+              chart.requestFullscreen().catch(err => {
+                alert(`Error attempting fullscreen: ${err.message}`);
+              });
+            } else {
+              document.exitFullscreen();
+            }
+          }
+
+              // Font increase script
+            function increaseFont() {
+              let currentSize = parseFloat(window.getComputedStyle(chart).fontSize);
+              chart.style.fontSize = (currentSize + 2) + "px";
+            }
+
+              // Font decrease script
+            function decreaseFont() {
+              let currentSize = parseFloat(window.getComputedStyle(chart).fontSize);
+              chart.style.fontSize = (currentSize - 2) + "px";
+            }
+
+            function toggleTheme() {
+              if (document.body.classList.contains("light")) {
+                document.body.classList.remove("light");
+                document.body.style.background = "#111";
+                document.body.style.color = "#eee";
+              } else {
+                document.body.classList.add("light");
+                document.body.style.background = "#fff";
+                document.body.style.color = "#111";
+              }
+            }
+
+
+            // Export setlist to JSON file
+          function exportSetlist() {
+            const dataStr = JSON.stringify(songs, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "setlist.json";
+            a.click();
+
+            URL.revokeObjectURL(url);
+          }
+
+          // Import setlist from JSON file
+          function importSetlist(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const importedSongs = JSON.parse(e.target.result);
+                if (Array.isArray(importedSongs)) {
+                  songs = importedSongs;
+                  localStorage.setItem("songs", JSON.stringify(songs));
+                  renderSetlist();
+                  alert("Setlist imported successfully!");
+                } else {
+                  alert("Invalid file format.");
+                }
+              } catch (err) {
+                alert("Error reading file: " + err.message);
+              }
+            };
+            reader.readAsText(file);
+          }
+
+
+          // Chord transposer
+        const chordMap = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+        function transpose(semitones) {
+          if (currentSongIndex < 0) return;
+
+          let chartText = songs[currentSongIndex].chart;
+
+          // Replace chords line by line
+          const transposed = chartText.split("\n").map(line => {
+            return line.replace(/\b([A-G](#|b)?)(m|maj7|sus4|dim|aug|7)?\b/g, (match, root, accidental, suffix) => {
+              let note = root + (accidental || "");
+              let suffixPart = suffix || "";
+
+              // Normalize flats to sharps
+              if (note.includes("b")) {
+                const flatMap = { "Db":"C#","Eb":"D#","Gb":"F#","Ab":"G#","Bb":"A#" };
+                note = flatMap[note] || note;
+              }
+
+              let index = chordMap.indexOf(note);
+              if (index === -1) return match; // not a chord
+
+              let newIndex = (index + semitones + chordMap.length) % chordMap.length;
+              return chordMap[newIndex] + suffixPart;
+            });
+          }).join("\n");
+
+          // Update chart display
+          songs[currentSongIndex].chart = transposed;
+          localStorage.setItem("songs", JSON.stringify(songs));
+          loadSong(currentSongIndex);
+        }
+
+
+
+              // Scroll speed  script...
+            function changeSpeed() {
+          if (scrollSpeed === 100) {
+            scrollSpeed = 50;
+            alert("Scroll speed: Medium");
+          } else if (scrollSpeed === 50) {
+            scrollSpeed = 20;
+            alert("Scroll speed: Fast");
+          } else {
+            scrollSpeed = 100;
+            alert("Scroll speed: Slow");
+          }
+          if (scrolling) {
+            clearInterval(scrollInterval);
+            toggleScroll(); // restart with new speed
+          }
+        }
+
+
+          function updateSpeed() {
+            const slider = document.getElementById("speedSlider");
+            scrollSpeed = parseInt(slider.value, 10);
+            if (scrolling) {
+              clearInterval(scrollInterval);
+              toggleScroll();
+            }
+          }
+
+        loadSongs();
+        loadNotes();
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+Pulse Dashboard End User License Agreement (EULA)
+
+Copyright (c) 2026 Derrick (Pulse Dashboard Software)
+
+IMPORTANT: PLEASE READ THIS AGREEMENT CAREFULLY BEFORE USING THE SOFTWARE.
+
+By installing, copying, or otherwise using the Pulse Dashboard (the "Software"), you agree to be bound by the terms of this End User License Agreement ("Agreement"). If you do not agree to these terms, do not install or use the Software.
+
+1. Grant of License
+   - You are granted a non-exclusive, non-transferable license to use the Software for personal, educational, worship, and prayer-related purposes.
+   - You may install and run the Software on multiple devices you own or control, provided usage remains consistent with the permitted purposes.
+
+2. Permitted Uses
+   - The Software may be used during worship services, prayer meetings, rehearsals, and other faith-based gatherings.
+   - You may generate, display, and perform chord charts, lyrics, progressions, and related musical content using the Software.
+   - You may customize templates, add your own lyrics, and adapt chord progressions to suit your worship context.
+
+3. Restrictions
+   - You may not reverse engineer, decompile, or disassemble the Software.
+   - You may not use the Software to create or distribute malicious code.
+   - You may not sell, rent, lease, or sublicense the Software without prior written consent from the author.
+   - The Software must not be used for unlawful activities or in contexts that promote hate, violence, or discrimination.
+
+4. Ownership
+   - The Software is owned by Derrick and is protected by copyright and intellectual property laws.
+   - All rights not expressly granted herein are reserved by the author.
+
+5. Distribution
+   - You may freely share the Software with others for worship and prayer purposes, provided this Agreement and copyright notice remain intact.
+   - Modified versions must clearly state that they are based on the original Pulse Dashboard project.
+
+6. Warranty Disclaimer
+   - THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+   - The author disclaims all warranties, express or implied, including but not limited to merchantability, fitness for a particular purpose, and non-infringement.
+   - The author shall not be liable for any damages arising from the use or inability to use the Software.
+
+7. Community Contribution
+   - Contributions, suggestions, and improvements are welcome. By submitting contributions, you agree they may be incorporated into the Software under the same license terms.
+
+8. Governing Law
+   - This Agreement shall be governed by and interpreted in accordance with the laws of your jurisdiction, without regard to conflict of law provisions.
+
+9. Termination
+   - This Agreement is effective until terminated. You may terminate it at any time by deleting the Software.
+   - The author may terminate this Agreement if you fail to comply with its terms. Upon termination, you must cease all use of the Software.
+
+10. Entire Agreement
+   - This Agreement constitutes the entire understanding between you and the author regarding the Software and supersedes all prior agreements.
+
+---
+
+END OF TERMS
+    
